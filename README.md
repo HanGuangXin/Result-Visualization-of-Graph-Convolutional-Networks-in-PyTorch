@@ -5,6 +5,8 @@ Modification of Graph Convolutional Networks in PyTorch
 
 **Modification of [Graph Convolutional Networks in PyTorch](https://github.com/tkipf/pygcn), visualization of test set results was added in this version with t-SNE algorithm.**
 
+You can cancel the visualization of ground truth and test set results with `--no_visual` for quick debugging.
+
 Thanks to the original author [Thomas Kipf](https://github.com/tkipf)  for the open source code, which provided me with the opportunity to learn.
 
 The visualization results are shown below:
