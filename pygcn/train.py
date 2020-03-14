@@ -30,7 +30,6 @@ from pygcn.models import GCN
 
 def show_Hyperparameter(args):
     argsDict = args.__dict__
-    print(argsDict)
     print('the settings are as following:')
     for key in argsDict:
         print(key,':',argsDict[key])
@@ -41,7 +40,14 @@ def train(epoch):
     model.train()
     optimizer.zero_grad()
     '''计算输出时，对所有的节点计算输出'''
+
+    # ----------------------------------debug----------------------------------
+    # print(features.size(),adj.size())
+    # torch.Size([2708, 1433]) torch.Size([2708, 2708])
+    # 也就是说，每次对整个图进行计算，但优化的时候，仅仅针对训练集样本产生的损失。
+    # ----------------------------------debug----------------------------------
     output = model(features, adj)
+
     '''损失函数，仅对训练集节点计算，即：优化仅对训练集数据进行'''
     loss_train = F.nll_loss(output[idx_train], labels[idx_train])
     # 计算准确率
@@ -96,13 +102,13 @@ def Visualization(vis, result, labels,title):
     vis.scatter(
         X = result,
         Y = labels+1,           # 将label的最小值从0变为1，显示时label不可为0
-       opts=dict(markersize=3,title=title),
+       opts=dict(markersize=4,title=title),
     )
 
 '''代码主函数开始'''
 # Training settings
 parser = argparse.ArgumentParser()
-parser.add_argument('--no-cuda', action='store_true', default=False,
+parser.add_argument('--no_cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--fastmode', action='store_true', default=False,
                     help='Validate during training pass.')
@@ -117,6 +123,8 @@ parser.add_argument('--hidden', type=int, default=16,
                     help='Number of hidden units.')
 parser.add_argument('--dropout', type=float, default=0.5,
                     help='Dropout rate (1 - keep probability).')
+parser.add_argument('--no_visual', action='store_true', default=False,
+                    help='visualization of ground truth and test result')
 
 args = parser.parse_args()
 
@@ -165,32 +173,34 @@ print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
 # Testing
 output=test()           # 返回output
 
-# 计算预测值
-preds = output.max(1)[1].type_as(labels)
+if not args.no_visual:
+    # 计算预测值
+    preds = output.max(1)[1].type_as(labels)
 
-# output的格式转换
-output=output.cpu().detach().numpy()
-labels=labels.cpu().detach().numpy()
-preds=preds.cpu().detach().numpy()
+    # output的格式转换
+    output = output.cpu().detach().numpy()
+    labels = labels.cpu().detach().numpy()
+    preds = preds.cpu().detach().numpy()
 
-# Visualization with visdom
-vis=Visdom(env='pyGCN Visualization')
+    # Visualization with visdom
+    vis = Visdom(env='pyGCN Visualization')
 
-# ground truth 可视化
-result_all_2d=t_SNE(output,2)
-Visualization(vis,result_all_2d,labels,
-              title='[ground truth of all samples]\n Dimension reduction to %dD' %(result_all_2d.shape[1]))
-result_all_3d=t_SNE(output,3)
-Visualization(vis,result_all_3d,labels,
-              title='[ground truth of all samples]\n Dimension reduction to %dD' %(result_all_3d.shape[1]))
+    # ground truth 可视化
+    result_all_2d = t_SNE(output, 2)
+    Visualization(vis, result_all_2d, labels,
+                  title='[ground truth of all samples]\n Dimension reduction to %dD' % (result_all_2d.shape[1]))
+    result_all_3d = t_SNE(output, 3)
+    Visualization(vis, result_all_3d, labels,
+                  title='[ground truth of all samples]\n Dimension reduction to %dD' % (result_all_3d.shape[1]))
 
-# 预测结果可视化
-result_test_2d=t_SNE(output[idx_test.cpu().detach().numpy()],2)
-Visualization(vis,result_test_2d,preds[idx_test.cpu().detach().numpy()],
-              title='[prediction of test set]\n Dimension reduction to %dD' %(result_test_2d.shape[1]))
-result_test_3d=t_SNE(output[idx_test.cpu().detach().numpy()],3)
-Visualization(vis,result_test_3d,preds[idx_test.cpu().detach().numpy()],
-              title='[prediction of test set]\n Dimension reduction to %dD' %(result_test_3d.shape[1]))
+    # 预测结果可视化
+    result_test_2d = t_SNE(output[idx_test.cpu().detach().numpy()], 2)
+    Visualization(vis, result_test_2d, preds[idx_test.cpu().detach().numpy()],
+                  title='[prediction of test set]\n Dimension reduction to %dD' % (result_test_2d.shape[1]))
+    result_test_3d = t_SNE(output[idx_test.cpu().detach().numpy()], 3)
+    Visualization(vis, result_test_3d, preds[idx_test.cpu().detach().numpy()],
+                  title='[prediction of test set]\n Dimension reduction to %dD' % (result_test_3d.shape[1]))
+
 
 
 
